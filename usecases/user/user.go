@@ -30,6 +30,7 @@ func NewUserUsecase(repository repository.UserRepository, redis *redis.Client) *
 
 type UserUsecases interface {
 	UserRegister(body model.RegisterUser) (*model.LoginResponse, error)
+	UserLogin(body model.LoginRequest) (*model.LoginResponse, error)
 }
 
 func (u *userUsecase) UserRegister(body model.RegisterUser) (*model.LoginResponse, error) {
@@ -117,6 +118,37 @@ func (u *userUsecase) UserRegister(body model.RegisterUser) (*model.LoginRespons
 	}
 
 	if err := cache.Set(ctx, u.redis, cacheKey, *accessToken, 10*time.Minute); err != nil {
+		return nil, err
+	}
+
+	return &model.LoginResponse{
+		UserData:              *user,
+		AccessToken:           *accessToken,
+		AccessTokenExpiresAt:  &payload.ExpiresAt.Time,
+		RefreshToken:          *refreshToken,
+		RefreshTokenExpiresAt: &refreshPayload.ExpiresAt.Time,
+	}, nil
+}
+
+func (u *userUsecase) UserLogin(body model.LoginRequest) (*model.LoginResponse, error) {
+	user, err := u.user.GetUserDetail(model.GetUserDetailRequest{Email: body.Email})
+	if err != nil {
+		return nil, err
+	}
+
+	passwordMatch := middlewares.VerifyPassword(user.Password, body.Password)
+
+	if !passwordMatch {
+		return nil, fault.Custom(http.StatusUnprocessableEntity, fault.ErrUnprocessable, fmt.Sprintf("failed to login: %v", err))
+	}
+
+	accessToken, payload, err := jwt.CreateAccessToken(user.Name, user.Email, user.Id.String())
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, refreshPayload, err := jwt.CreateRefreshToken(user.Name, user.Email, user.Id.String())
+	if err != nil {
 		return nil, err
 	}
 
