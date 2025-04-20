@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "proto/product";
+
+message ProductInsertRequest {
+    string user_id = 1;
+    string name = 2;
+    float price = 3;
+    string description = 4;
+    uint32 qty = 5;
+}
+
+message ProductInsertResponse {
+    string msg = 1;
+}
+
+message Product {
+    string id = 1;
+    string user_id = 2;
+    string name = 3;
+    float price = 4;
+    string description = 5;
+    uint32 qty = 6;
+}
+
+message ListProductRequest {
+    uint32 page = 1;
+    uint32 limit = 2;
+    repeated string product_ids = 3;
+}
+
+message Meta {
+    uint32 total_data = 1;
+    uint32 total_page = 2;
+    uint32 current_page = 3;
+    uint32 limit = 4;
+}
+
+message ListProductResponse {
+    repeated Product items = 1;
+    Meta meta = 2;
+}
+
+message ReduceProductItem {
+    string product_id = 1;
+    uint32 qty = 2;
+}
+
+message ReduceProductRequest {
+    repeated ReduceProductItem items = 1;
+}
+
+message ReduceProductResponse {
+    string message = 1;
+}
+
+service ProductService {
+    rpc InsertProduct(ProductInsertRequest) returns (ProductInsertResponse);
+    rpc ListProduct(ListProductRequest) returns (ListProductResponse);
+    rpc ReduceProductQty(ReduceProductRequest) returns (ReduceProductResponse);
+}

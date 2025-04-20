@@ -2,9 +2,11 @@ package jwt
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Reza1878/goesclearning/user-service/helper/fault"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 )
@@ -35,7 +37,7 @@ func generateToken(name, email, userId string, duration time.Duration) (*string,
 		return nil, nil, err
 	}
 
-	token, err := jwt.NewWithClaims(jwt.SigningMethodES256, payload).SignedString(signedKey)
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, payload).SignedString(signedKey)
 	if err != nil {
 		return nil, nil, fault.Custom(
 			http.StatusUnprocessableEntity,
@@ -73,4 +75,49 @@ func newJWTPayload(name, email, userId string, duration time.Duration) (*JWTPayl
 			ExpiresAt: jwt.NewNumericDate(exp),
 		},
 	}, nil
+}
+
+func GetTokenFromHeader(ctx *gin.Context) (string, error) {
+	token := ctx.GetHeader("Authorization")
+	if token == "" {
+		return "", fault.Custom(
+			http.StatusUnauthorized,
+			fault.ErrUnauthorized,
+			"token not found",
+		)
+	}
+
+	splittedToken := strings.Split(token, " ")
+	if len(splittedToken) == 0 {
+		return "", fault.Custom(
+			http.StatusUnauthorized,
+			fault.ErrUnauthorized,
+			"token invalid",
+		)
+	}
+
+	return splittedToken[1], nil
+}
+
+func GetClaims(token string) (*JWTPayload, error) {
+	parsedToken, err := jwt.ParseWithClaims(token, &JWTPayload{}, func(t *jwt.Token) (interface{}, error) {
+		return signedKey, nil
+	})
+	if err != nil {
+		return nil, fault.Custom(
+			http.StatusUnauthorized,
+			fault.ErrUnauthorized,
+			"failed to parse token: "+err.Error(),
+		)
+	}
+
+	if claims, ok := parsedToken.Claims.(*JWTPayload); ok && parsedToken.Valid {
+		return claims, nil
+	}
+
+	return nil, fault.Custom(
+		http.StatusUnauthorized,
+		fault.ErrUnauthorized,
+		"invalid token",
+	)
 }

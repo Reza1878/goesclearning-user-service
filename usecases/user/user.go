@@ -121,6 +121,8 @@ func (u *userUsecase) UserRegister(body model.RegisterUser) (*model.LoginRespons
 		return nil, err
 	}
 
+	user.Password = ""
+
 	return &model.LoginResponse{
 		UserData:              *user,
 		AccessToken:           *accessToken,
@@ -151,6 +153,8 @@ func (u *userUsecase) UserLogin(body model.LoginRequest) (*model.LoginResponse, 
 	if err != nil {
 		return nil, err
 	}
+
+	user.Password = ""
 
 	return &model.LoginResponse{
 		UserData:              *user,

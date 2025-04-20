@@ -57,7 +57,7 @@ func (s *store) InsertUser(user model.RegisterUser) (*uuid.UUID, error) {
 }
 
 func (s *store) GetUserDetail(req model.GetUserDetailRequest) (*model.User, error) {
-	baseQuery := `SELECT id, name, email created_at, updated_at FROM users WHERE `
+	baseQuery := `SELECT id, password, name, email, created_at, updated_at FROM users WHERE `
 	var args []interface{}
 	var conditions []string
 
@@ -95,6 +95,7 @@ func (s *store) GetUserDetail(req model.GetUserDetailRequest) (*model.User, erro
 
 	err := s.db.QueryRow(query, args...).Scan(
 		&user.Id,
+		&user.Password,
 		&user.Name,
 		&user.Email,
 		&user.CreatedAt,

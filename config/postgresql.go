@@ -27,6 +27,14 @@ func InitPostgreSQL(cfg PostgreSQLConfig) (*sql.DB, error) {
 		cfg.DbHost,
 		cfg.DbPort)
 
+	if cfg.DbPassword == "" {
+		conn = fmt.Sprintf("user=%s dbname=%s host=%s port=%s sslmode=disable",
+			cfg.DbUsername,
+			cfg.DbName,
+			cfg.DbHost,
+			cfg.DbPort)
+	}
+
 	db, err := sql.Open("postgres", conn)
 	if err != nil {
 		panic(err)

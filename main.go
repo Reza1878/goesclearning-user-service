@@ -2,11 +2,15 @@ package main
 
 import (
 	"database/sql"
+	"log"
 
 	"github.com/Reza1878/goesclearning/user-service/config"
+	productHandlers "github.com/Reza1878/goesclearning/user-service/handler/product"
 	handlers "github.com/Reza1878/goesclearning/user-service/handler/user"
+	"github.com/Reza1878/goesclearning/user-service/proto/product"
 	repository "github.com/Reza1878/goesclearning/user-service/repository/user"
 	"github.com/Reza1878/goesclearning/user-service/routes"
+	productUC "github.com/Reza1878/goesclearning/user-service/usecases/product"
 	usecases "github.com/Reza1878/goesclearning/user-service/usecases/user"
 
 	"github.com/redis/go-redis/v9"
@@ -21,12 +25,14 @@ func main() {
 
 	db, err := config.InitPostgreSQL(cfg.Postgres)
 	if err != nil {
+		log.Default().Printf("[ERROR] %v", err)
 		return
 	}
 	defer db.Close()
 
 	redis, err := config.InitRedis(cfg.Redis)
 	if err != nil {
+		log.Default().Printf("[ERROR] %v", err)
 		return
 	}
 
@@ -45,7 +51,12 @@ func initDepedencies(db *sql.DB, rpc *grpc.ClientConn, redis *redis.Client) *rou
 	userUC := usecases.NewUserUsecase(userRepo, redis)
 	userHandler := handlers.NewHandler(userUC)
 
+	productRPC := product.NewProductServiceClient(rpc)
+	productUC := productUC.NewProductUsecase(productRPC)
+	productHandler := productHandlers.NewProductUsecase(productUC)
+
 	return &routes.Routes{
-		User: userHandler,
+		User:    userHandler,
+		Product: productHandler,
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Reza1878/goesclearning/user-service/helper/response"
 	"github.com/Reza1878/goesclearning/user-service/model"
 	"github.com/gin-gonic/gin"
 )
@@ -100,4 +101,20 @@ func ErrorHandler(ctx *gin.Context, err error) {
 			Message:    errors.External.Message,
 		},
 	)
+}
+
+func Response(ctx *gin.Context, err error) {
+	errors, ok := err.(*DetailedError)
+	if !ok {
+		errors = newError(http.StatusInternalServerError, "Something went wrong", err.Error())
+	}
+
+	if errors.External.HTTPStatus >= http.StatusUnauthorized {
+		log.Printf("[ERROR] status=%d | %s\n",
+			errors.Internal.HTTPStatus,
+			errors.Internal.Message,
+		)
+	}
+
+	response.JSON(ctx, errors.External.HTTPStatus, errors.External.Message, nil)
 }
